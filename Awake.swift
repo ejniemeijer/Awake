@@ -4,18 +4,20 @@ import IOKit.pwr_mgt
 // Tiny menu bar keep-awake toggle.
 // While on, it holds a power assertion that stops the display (and Mac) from
 // sleeping due to idleness — the same thing `caffeinate -d` does.
-// Optionally it also moves the cursor 1px and back after a minute of idleness,
+// Optionally it also moves the cursor 1px and back after a chosen idle time,
 // so apps that watch mouse movement see activity. That needs Accessibility access.
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    private let nudgeAfter: TimeInterval = 60
     private var sleepAssertion: IOPMAssertionID = 0
     private var timer: Timer?
 
     private var enabled = false { didSet { apply() } }
     private var nudgeCursor = UserDefaults.standard.object(forKey: "nudge") as? Bool ?? true {
         didSet { UserDefaults.standard.set(nudgeCursor, forKey: "nudge"); apply() }
+    }
+    private var nudgeAfter = UserDefaults.standard.object(forKey: "nudgeAfter") as? TimeInterval ?? 60 {
+        didSet { UserDefaults.standard.set(nudgeAfter, forKey: "nudgeAfter"); buildMenu() }
     }
 
     func applicationDidFinishLaunching(_ note: Notification) {
@@ -39,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                         IOPMAssertionLevel(kIOPMAssertionLevelOn),
                                         "Keeping the display awake" as CFString, &sleepAssertion)
             if nudgeCursor {
-                let t = Timer(timeInterval: 15, repeats: true) { [weak self] _ in self?.tick() }
+                let t = Timer(timeInterval: 5, repeats: true) { [weak self] _ in self?.tick() }
                 RunLoop.main.add(t, forMode: .common)
                 timer = t
             }
@@ -80,6 +82,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         nudge.target = self
         nudge.state = nudgeCursor ? .on : .off
         menu.addItem(nudge)
+        if nudgeCursor {
+            for (label, seconds) in [("After 30 seconds idle", 30.0), ("After 1 minute idle", 60),
+                                     ("After 2 minutes idle", 120), ("After 4 minutes idle", 240)] {
+                let item = NSMenuItem(title: label, action: #selector(pickInterval(_:)), keyEquivalent: "")
+                item.target = self
+                item.tag = Int(seconds)
+                item.state = nudgeAfter == seconds ? .on : .off
+                item.indentationLevel = 1
+                menu.addItem(item)
+            }
+        }
         if nudgeCursor && !AXIsProcessTrusted() {
             let grant = NSMenuItem(title: "Grant Accessibility access…", action: #selector(requestAccess), keyEquivalent: "")
             grant.target = self
@@ -95,6 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleEnabled() { enabled.toggle() }
     @objc private func toggleNudge() { nudgeCursor.toggle() }
+    @objc private func pickInterval(_ sender: NSMenuItem) { nudgeAfter = TimeInterval(sender.tag) }
     @objc private func requestAccess() {
         let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         AXIsProcessTrustedWithOptions(opts)
