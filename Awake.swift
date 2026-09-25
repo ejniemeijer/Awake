@@ -14,7 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var timer: Timer?
 
     private var enabled = false { didSet { apply() } }
-    private var nudgeCursor = UserDefaults.standard.bool(forKey: "nudge") {
+    private var nudgeCursor = UserDefaults.standard.object(forKey: "nudge") as? Bool ?? true {
         didSet { UserDefaults.standard.set(nudgeCursor, forKey: "nudge"); apply() }
     }
 
