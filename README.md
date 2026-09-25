@@ -1,4 +1,4 @@
-# Jiggler
+# Awake
 
 A tiny macOS menu bar toggle that keeps your display awake — a clickable version of `caffeinate -d`.
 
@@ -11,7 +11,7 @@ It doesn't move the cursor or fake any activity, so chat apps still show you as 
 
 ```bash
 ./build.sh
-open Jiggler.app
+open Awake.app
 ```
 
-Requires the Xcode command line tools (`swiftc`). To start it at login, add `Jiggler.app` under System Settings → General → Login Items.
+Requires the Xcode command line tools (`swiftc`). To start it at login, add `Awake.app` under System Settings → General → Login Items.
