@@ -1,5 +1,8 @@
 import Cocoa
 import IOKit.pwr_mgt
+import os
+
+private let log = Logger(subsystem: "local.awake", category: "cursor")
 
 // Tiny menu bar keep-awake toggle.
 // While on, it holds a power assertion that stops the display (and Mac) from
@@ -123,8 +126,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func tick() {
         let idle = CGEventSource.secondsSinceLastEventType(.combinedSessionState,
                                                            eventType: CGEventType(rawValue: ~0)!)
-        guard idle >= nudgeAfter, glideTimer == nil, AXIsProcessTrusted(),
-              let pos = cursorLocation() else { return }
+        guard idle >= nudgeAfter, glideTimer == nil, let pos = cursorLocation() else { return }
+        guard AXIsProcessTrusted() else {
+            log.notice("Idle \(Int(idle), privacy: .public)s but no Accessibility access; not moving")
+            return
+        }
+        log.notice("Idle \(Int(idle), privacy: .public)s; \(self.glide ? "gliding" : "nudging", privacy: .public)")
         if glide {
             startGlide(from: pos)
         } else {
@@ -149,16 +156,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let duration = glideDuration
         let began = Date()
+        var previous = start
         var last = start
         let t = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
             guard let self else { return }
-            if let now = self.cursorLocation(), hypot(now.x - last.x, now.y - last.y) > 3 {
+            // The reported position can lag a frame behind, so only treat it as the user
+            // taking over when it's away from both of the last two points we moved to.
+            if let now = self.cursorLocation(),
+               hypot(now.x - last.x, now.y - last.y) > 4, hypot(now.x - previous.x, now.y - previous.y) > 4 {
+                log.notice("Mouse moved by user; glide stopped")
                 self.stopGlide()
                 return
             }
             let progress = min(Date().timeIntervalSince(began) / duration, 1)
             let e = CGFloat(progress < 0.5 ? 2 * progress * progress : 1 - pow(-2 * progress + 2, 2) / 2)
             let u = 1 - e
+            previous = last
             last = CGPoint(x: u * u * start.x + 2 * u * e * control.x + e * e * end.x,
                            y: u * u * start.y + 2 * u * e * control.y + e * e * end.y)
             self.moveCursor(to: last)
