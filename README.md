@@ -1,10 +1,11 @@
 # Jiggler
 
-A tiny macOS menu bar app that keeps you "active" while you're away.
+A tiny macOS menu bar toggle that keeps your display awake — a clickable version of `caffeinate -d`.
 
-- Keeps the display awake while enabled.
-- After you've been idle for the chosen time (30 s, 1, 2 or 5 min), it tells macOS there is user activity.
-- Optionally nudges the cursor 1px and back, so apps like Teams and Slack don't mark you as away. This needs Accessibility permission (the menu offers a shortcut to grant it).
+- On: the display and Mac won't sleep because of inactivity.
+- Off (or quit): normal sleep settings apply again.
+
+It doesn't move the cursor or fake any activity, so chat apps still show you as away when you are.
 
 ## Build
 
