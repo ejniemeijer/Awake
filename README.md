@@ -1,11 +1,11 @@
 # Awake
 
-A tiny macOS menu bar toggle that keeps your display awake — a clickable version of `caffeinate -d`.
+A tiny macOS menu bar toggle that keeps your display awake — a clickable version of `caffeinate -d` — with an optional mouse jiggle.
 
 - On: the display and Mac won't sleep because of inactivity.
 - Off (or quit): normal sleep settings apply again.
 
-It doesn't move the cursor or fake any activity, so chat apps still show you as away when you are.
+- **Move cursor 1px when idle** (menu toggle, off by default): after a minute without input, the cursor moves 1px and straight back, so apps like Teams and Slack keep showing you as active. This needs Accessibility permission; the menu offers a shortcut to grant it.
 
 ## Build
 
